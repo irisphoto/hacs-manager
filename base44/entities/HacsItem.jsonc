@@ -1,0 +1,77 @@
+{
+  "name": "HacsItem",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Display name of the item"
+    },
+    "description": {
+      "type": "string",
+      "description": "Short description of what it does"
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "integration",
+        "theme",
+        "frontend",
+        "appdaemon",
+        "python_script",
+        "template",
+        "script"
+      ],
+      "description": "HACS category type"
+    },
+    "author": {
+      "type": "string",
+      "description": "Repository owner / author"
+    },
+    "repo_full_name": {
+      "type": "string",
+      "description": "owner/repo on GitHub"
+    },
+    "repository_url": {
+      "type": "string",
+      "description": "Full GitHub URL"
+    },
+    "stars": {
+      "type": "integer",
+      "default": 0
+    },
+    "downloads": {
+      "type": "integer",
+      "default": 0
+    },
+    "last_updated": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "version": {
+      "type": "string"
+    },
+    "installed": {
+      "type": "boolean",
+      "default": false
+    },
+    "installed_version": {
+      "type": "string"
+    },
+    "topics": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "featured": {
+      "type": "boolean",
+      "default": false
+    }
+  },
+  "required": [
+    "name",
+    "category",
+    "author",
+    "repository_url"
+  ]
+}
