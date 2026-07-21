@@ -1,0 +1,46 @@
+{
+  "name": "AxleEvent",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string"
+    },
+    "device_id": {
+      "type": "string"
+    },
+    "start_time": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "end_time": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "reward_gbp": {
+      "type": "number"
+    },
+    "power_kw": {
+      "type": "number",
+      "description": "Requested export power"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "scheduled",
+        "active",
+        "completed",
+        "skipped"
+      ],
+      "default": "scheduled"
+    },
+    "energy_delivered_kwh": {
+      "type": "number",
+      "default": 0
+    }
+  },
+  "required": [
+    "title",
+    "start_time",
+    "end_time"
+  ]
+}

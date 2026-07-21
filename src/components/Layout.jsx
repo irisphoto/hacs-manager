@@ -1,6 +1,6 @@
 import React from "react";
 import { Outlet, Link, useLocation } from "react-router-dom";
-import { Store, Compass, Package, Settings } from "lucide-react";
+import { Store, Compass, Package, Settings, Link2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 
@@ -8,6 +8,7 @@ const NAV = [
   { to: "/", label: "Dashboard", icon: Store },
   { to: "/explore", label: "Explore", icon: Compass },
   { to: "/installed", label: "Installed", icon: Package },
+  { to: "/axle-solix", label: "Axle × Solix", icon: Link2 },
 ];
 
 export default function Layout() {

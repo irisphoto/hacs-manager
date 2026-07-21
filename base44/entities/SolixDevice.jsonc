@@ -1,0 +1,66 @@
+{
+  "name": "SolixDevice",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Device display name"
+    },
+    "serial": {
+      "type": "string"
+    },
+    "capacity_kwh": {
+      "type": "number"
+    },
+    "soc": {
+      "type": "number",
+      "description": "State of charge %",
+      "default": 0
+    },
+    "power_kw": {
+      "type": "number",
+      "description": "Positive = discharging, negative = charging",
+      "default": 0
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "idle",
+        "charging",
+        "discharging",
+        "offline"
+      ],
+      "default": "idle"
+    },
+    "anker_connected": {
+      "type": "boolean",
+      "default": false
+    },
+    "anker_account": {
+      "type": "string"
+    },
+    "axle_connected": {
+      "type": "boolean",
+      "default": false
+    },
+    "axle_account": {
+      "type": "string"
+    },
+    "axle_enrolled": {
+      "type": "boolean",
+      "default": false
+    },
+    "total_earnings_gbp": {
+      "type": "number",
+      "default": 0
+    },
+    "reserve_soc": {
+      "type": "number",
+      "default": 20,
+      "description": "Min SOC kept during discharge events"
+    }
+  },
+  "required": [
+    "name"
+  ]
+}
