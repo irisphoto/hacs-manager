@@ -58,6 +58,18 @@
       "type": "number",
       "default": 20,
       "description": "Min SOC kept during discharge events"
+    },
+    "ha_soc_entity": {
+      "type": "string",
+      "description": "Home Assistant entity id for state of charge"
+    },
+    "ha_power_entity": {
+      "type": "string",
+      "description": "Home Assistant entity id for power flow"
+    },
+    "ha_status_entity": {
+      "type": "string",
+      "description": "Home Assistant entity id for device status"
     }
   },
   "required": [

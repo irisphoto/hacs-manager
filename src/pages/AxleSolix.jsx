@@ -5,14 +5,17 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { SocGauge } from "@/components/axle/SocGauge";
 import { EventCard } from "@/components/axle/EventCard";
-import { Link2, Zap, Battery, PoundSterling, Check, Loader2, Plug } from "lucide-react";
+import { Link2, Zap, Battery, PoundSterling, Check, Loader2, Plug, RefreshCw, Settings } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
+import { HaSettingsDialog } from "@/components/axle/HaSettingsDialog";
 
 export default function AxleSolix() {
   const [device, setDevice] = useState(null);
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
+  const [syncing, setSyncing] = useState(false);
+  const [haOpen, setHaOpen] = useState(false);
   const { toast } = useToast();
 
   const load = async () => {
@@ -76,6 +79,25 @@ export default function AxleSolix() {
     setDevice(updated);
     setEvents(prev => prev.map(e => e.id === ev.id ? { ...e, status: "completed", energy_delivered_kwh: kwh } : e));
     toast({ title: "Event completed", description: `Earned £${ev.reward_gbp.toFixed(2)}.` });
+  };
+
+  const syncFromHA = async () => {
+    if (!device) return;
+    setSyncing(true);
+    try {
+      const res = await base44.functions.invoke("syncSolixFromHA", { device_id: device.id });
+      setDevice(res.data.device);
+      toast({ title: "Synced from Home Assistant", description: "Live battery data updated." });
+    } catch (e) {
+      toast({ title: "Sync failed", description: e?.response?.data?.error || e.message, variant: "destructive" });
+    } finally { setSyncing(false); }
+  };
+
+  const saveHaSettings = async (patch) => {
+    const updated = await base44.entities.SolixDevice.update(device.id, patch);
+    setDevice(updated);
+    setHaOpen(false);
+    toast({ title: "Sensor mapping saved" });
   };
 
   if (loading) {
@@ -155,9 +177,17 @@ export default function AxleSolix() {
                     <div className="text-sm font-medium text-foreground">{device.name}</div>
                     <div className="text-xs text-muted-foreground">{device.capacity_kwh}kWh · {device.serial}</div>
                   </div>
-                  <Badge variant={device.status === "discharging" ? "default" : "secondary"} className="text-xs capitalize">
-                    {device.status}
-                  </Badge>
+                  <div className="flex items-center gap-1">
+                    <Badge variant={device.status === "discharging" ? "default" : "secondary"} className="text-xs capitalize">
+                      {device.status}
+                    </Badge>
+                    <Button size="icon" variant="ghost" className="h-7 w-7" onClick={syncFromHA} disabled={syncing} title="Sync from Home Assistant">
+                      {syncing ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+                    </Button>
+                    <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => setHaOpen(true)} title="Home Assistant sensors">
+                      <Settings className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
                 <div className="flex flex-col sm:flex-row items-center gap-6 mt-4">
                   <SocGauge soc={device.soc || 0} />
@@ -220,6 +250,8 @@ export default function AxleSolix() {
               </div>
             )}
           </div>
+
+          <HaSettingsDialog open={haOpen} onOpenChange={setHaOpen} device={device} onSave={saveHaSettings} />
         </>
       )}
     </div>
