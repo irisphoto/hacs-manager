@@ -29,15 +29,16 @@ export default function ItemDetail() {
     if (!item) return;
     setActionLoading(true);
     try {
-      const updated = await base44.entities.HacsItem.update(item.id, {
-        installed: true,
-        installed_version: item.version,
-        downloads: (item.downloads || 0) + 1
+      const res = await base44.functions.invoke("installHacsItem", { item_id: item.id });
+      setItem(res.data.item);
+      toast({
+        title: "Installed",
+        description: res.data.notified
+          ? `${item.name} installed and notified Home Assistant.`
+          : `${item.name} has been installed.`
       });
-      setItem(updated);
-      toast({ title: "Installed", description: `${item.name} has been installed.` });
     } catch (e) {
-      toast({ title: "Install failed", description: "Could not install this item.", variant: "destructive" });
+      toast({ title: "Install failed", description: e?.response?.data?.error || "Could not install this item.", variant: "destructive" });
     } finally {
       setActionLoading(false);
     }
