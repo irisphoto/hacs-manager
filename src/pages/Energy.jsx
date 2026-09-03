@@ -19,6 +19,7 @@ export default function Energy() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [sensors, setSensors] = useState(null);
+  const [statsError, setStatsError] = useState(null);
   const [chargingNow, setChargingNow] = useState(false);
 
   const load = useCallback(async (initial = false) => {
@@ -29,10 +30,16 @@ export default function Energy() {
       setDevice(d);
       if (d) {
         const [statsRes, sensorsRes] = await Promise.all([
-          base44.functions.invoke("getEnergyStats", { device_id: d.id }),
+          base44.functions.invoke("getEnergyStats", { device_id: d.id }).catch((e) => ({ error: e })),
           base44.functions.invoke("getSolixSensors", { device_id: d.id }).catch(() => ({ data: { sensors: [] } })),
         ]);
-        setStats(statsRes.data);
+        if (statsRes.error) {
+          setStats(null);
+          setStatsError(statsRes.error.response?.data?.error || statsRes.error.message);
+        } else {
+          setStats(statsRes.data);
+          setStatsError(null);
+        }
         setSensors(sensorsRes.data.sensors || []);
       }
     } catch (error) {
@@ -100,17 +107,24 @@ export default function Energy() {
         </div>
         <div className="flex items-center gap-2">
           {stats && (
-            <Badge variant={stats.source === "home_assistant" ? "default" : "secondary"} className="gap-1">
-              {stats.source === "home_assistant"
-                ? <><Wifi className="h-3 w-3" />Live from Home Assistant</>
-                : <><WifiOff className="h-3 w-3" />Demo data</>}
-            </Badge>
+            <Badge variant="default" className="gap-1"><Wifi className="h-3 w-3" />Live from Home Assistant</Badge>
+          )}
+          {statsError && (
+            <Badge variant="destructive" className="gap-1"><WifiOff className="h-3 w-3" />No live data</Badge>
           )}
           <Button size="sm" variant="outline" onClick={() => load(false)} disabled={loading || refreshing}>
             <RefreshCw className={cn("h-4 w-4", refreshing && "animate-spin")} />Refresh
           </Button>
         </div>
       </div>
+
+      {statsError && (
+        <Card className="border-destructive/40 bg-destructive/5">
+          <CardContent className="py-4 text-sm text-muted-foreground">
+            Live data unavailable: {statsError}. Check that Home Assistant is online and your sensor entities are set, then hit Refresh.
+          </CardContent>
+        </Card>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <Card className="lg:col-span-2">
@@ -121,7 +135,7 @@ export default function Energy() {
             </div>
             <div className="flex flex-col items-end gap-1 shrink-0">
               <Button size="sm" onClick={chargeNow} disabled={chargingNow || !device.ha_car_charge_entity}>
-                {chargingNow ? <Loader2 className="h-4 w-4 animate-spin" /> : <Zap className="h-4 w-4" />}Charge Now
+                {chargingNow ? <Loader2 className="h-4 w-4 animate-spin" /> : <Zap className="h-4 w-4" />}Charge Car
               </Button>
               {!device.ha_car_charge_entity && (
                 <span className="text-[10px] text-muted-foreground text-right">Add the charger entity in HA sensors</span>

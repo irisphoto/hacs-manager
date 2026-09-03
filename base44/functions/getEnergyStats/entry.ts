@@ -64,29 +64,6 @@ const aggregate = (buckets, device) => {
   };
 };
 
-// realistic 7-day demo data when Home Assistant is not available
-const demoBuckets = () => {
-  const nowHour = Math.floor(Date.now() / HOUR_MS) * HOUR_MS;
-  const buckets = [];
-  let soc = 78;
-  for (let i = 167; i >= 0; i--) {
-    const t = nowHour - i * HOUR_MS;
-    const h = new Date(t).getUTCHours();
-    const day = new Date(t).getUTCDay();
-    let home = 0.25 + 0.15 * Math.abs(Math.sin(h * 1.7 + i));
-    if (h >= 6 && h <= 8) home += 0.9;
-    if (h >= 17 && h <= 21) home += 1.1;
-    const car = (h >= 1 && h <= 4 && day % 2 === 1) ? 3.5 : 0;
-    let batt = 0;
-    if (h >= 10 && h <= 14) batt = -(0.9 + 0.3 * Math.abs(Math.sin(h)));
-    if (h >= 17 && h <= 21) batt = 1.2 + 0.2 * Math.abs(Math.cos(h));
-    const grid = Math.max(0, home + car - Math.max(0, batt) + Math.max(0, -batt));
-    soc = Math.min(100, Math.max(15, soc - batt * 0.9));
-    buckets.push({ t, soc: Math.round(soc), battery_kw: round1(batt), grid_kw: round1(grid), home_kw: round1(home), car_kw: round1(car) });
-  }
-  return buckets;
-};
-
 export default async function (req) {
   try {
     const base44 = createClientFromRequest(req);
@@ -109,8 +86,11 @@ export default async function (req) {
     };
     const configured = Object.values(entities).filter(Boolean);
 
-    if (!baseUrl || !token || configured.length === 0) {
-      return Response.json({ source: 'demo', ...aggregate(demoBuckets(), device) });
+    if (!baseUrl || !token) {
+      return Response.json({ error: 'Home Assistant is not configured' }, { status: 500 });
+    }
+    if (configured.length === 0) {
+      return Response.json({ error: 'No Home Assistant sensor entities configured. Add them in the Home Assistant sensor settings.' }, { status: 400 });
     }
 
     const end = new Date();
@@ -121,7 +101,7 @@ export default async function (req) {
       `&minimal_response=1&significant_changes_only=1`;
 
     const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
-    if (!res.ok) return Response.json({ source: 'demo', ...aggregate(demoBuckets(), device) });
+    if (!res.ok) return Response.json({ error: `Home Assistant returned ${res.status}` }, { status: 502 });
     const history = await res.json();
 
     const series = {};
@@ -161,7 +141,7 @@ export default async function (req) {
     }
 
     const hasData = buckets.some((b) => b.soc != null || b.battery_kw || b.grid_kw || b.home_kw || b.car_kw);
-    if (!hasData) return Response.json({ source: 'demo', ...aggregate(demoBuckets(), device) });
+    if (!hasData) return Response.json({ error: 'No history data found for the configured entities' }, { status: 404 });
 
     return Response.json({ source: 'home_assistant', ...aggregate(buckets, device) });
   } catch (error) {
