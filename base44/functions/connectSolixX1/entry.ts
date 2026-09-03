@@ -18,7 +18,13 @@ export default async function (req) {
     const token = secrets.get('HA_TOKEN');
     if (!baseUrl || !token) return Response.json({ error: 'Home Assistant is not configured' }, { status: 500 });
 
-    const res = await fetch(`${baseUrl}/api/states`, { headers: { Authorization: `Bearer ${token}` } });
+    const res = await fetch(`${baseUrl}/api/states`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'User-Agent': 'Mozilla/5.0 (compatible; HACS-Manager/1.0)',
+        Accept: 'application/json',
+      },
+    });
     if (!res.ok) {
       return Response.json({
         connected: false,
