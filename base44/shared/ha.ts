@@ -45,14 +45,25 @@ export const listAllSnapshots = async (client, maxPages = 10) => {
 
 export const findSolixMapping = (snapshots) => {
   const solix = snapshots.filter(isSolix);
-  const find = (pred) => solix.find((e) => pred(solixText(e)));
+  // ignore daily-total / energy counters (kWh) — we want live power sensors
+  const usable = solix.filter((e) => !/daily|_kwh|battery_energy/.test(solixText(e)));
+  const first = (patterns, exclude = []) => {
+    for (const p of patterns) {
+      const hit = usable.find((e) => {
+        const t = solixText(e);
+        return t.includes(p) && !exclude.some((x) => t.includes(x));
+      });
+      if (hit) return hit;
+    }
+    return undefined;
+  };
   return {
-    ha_soc_entity: find((t) => /soc|state_of_charge|battery_level/.test(t)),
-    ha_power_entity: find((t) => t.includes('power') && !/grid|meter|home|load|consumption|car|ev|charger|vehicle/.test(t)),
-    ha_status_entity: find((t) => /status|operating|mode/.test(t)),
-    ha_grid_entity: find((t) => /grid|meter/.test(t) && !/car|ev|charger/.test(t)),
-    ha_home_entity: find((t) => /home|load|consumption|house/.test(t)),
-    ha_car_entity: find((t) => /car|ev|charger|vehicle/.test(t)),
+    ha_soc_entity: first(['state_of_charge', 'soc', 'battery_level']),
+    ha_power_entity: first(['discharge_power', 'generated_battery_power'], []) || first(['power'], ['grid', 'meter', 'home', 'load', 'consumption', 'car', 'ev', 'charger', 'vehicle', 'charge']),
+    ha_status_entity: first(['grid_status', 'station_role', 'status', 'operating', 'mode']),
+    ha_grid_entity: first(['grid_import', 'grid_power', 'grid'], ['car', 'ev', 'charger', 'export']),
+    ha_home_entity: first(['home_demand', 'home_load', 'home']),
+    ha_car_entity: first(['ev_charging_power', 'car', 'ev', 'charger', 'vehicle']),
   };
 };
 
@@ -81,5 +92,7 @@ export const buildDevicePatch = (device, stateMap) => {
     else if (raw.includes('offline') || raw.includes('unavail')) patch.status = 'offline';
     else patch.status = 'idle';
   }
+  // a positive power reading means the battery is discharging right now
+  if (patch.power_kw > 0 && patch.status === 'idle') patch.status = 'discharging';
   return patch;
 };
