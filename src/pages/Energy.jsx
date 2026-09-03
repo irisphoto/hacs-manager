@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { base44 } from "@/api/base44Client";
-import { RefreshCw, Activity, ArrowRight, Wifi, WifiOff, Zap, Loader2, ArrowDownToLine } from "lucide-react";
+import { RefreshCw, Activity, ArrowRight, Wifi, WifiOff, Zap, Loader2, ArrowDownToLine, Square } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -23,6 +23,7 @@ export default function Energy() {
   const [statsError, setStatsError] = useState(null);
   const [chargingNow, setChargingNow] = useState(false);
   const [exporting, setExporting] = useState(false);
+  const [stopping, setStopping] = useState(false);
   const [connecting, setConnecting] = useState(false);
 
   const load = useCallback(async (initial = false) => {
@@ -81,6 +82,20 @@ export default function Energy() {
       toast({ title: "Could not start export", description: detail, variant: "destructive" });
     } finally {
       setExporting(false);
+    }
+  };
+
+  const stopDischarge = async () => {
+    setStopping(true);
+    try {
+      await base44.functions.invoke("stopDischarge", { device_id: device.id });
+      toast({ title: "Stop requested", description: "Home Assistant will stop discharging your battery." });
+      await load(false);
+    } catch (error) {
+      const detail = error.response?.data?.error || error.message;
+      toast({ title: "Could not stop discharge", description: detail, variant: "destructive" });
+    } finally {
+      setStopping(false);
     }
   };
 
@@ -175,7 +190,10 @@ export default function Energy() {
               <CardTitle>Energy flow</CardTitle>
               <CardDescription>Live power between grid, battery, home and car.</CardDescription>
             </div>
-            <div className="flex items-center gap-2 shrink-0">
+            <div className="flex flex-wrap items-center justify-end gap-2 shrink-0">
+              <Button size="sm" variant="outline" onClick={stopDischarge} disabled={stopping}>
+                {stopping ? <Loader2 className="h-4 w-4 animate-spin" /> : <Square className="h-4 w-4" />}Stop discharge
+              </Button>
               <Button size="sm" variant="outline" onClick={exportToGrid} disabled={exporting}>
                 {exporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowDownToLine className="h-4 w-4" />}Export to grid
               </Button>
@@ -192,7 +210,7 @@ export default function Energy() {
             />
           </CardContent>
         </Card>
-        <BatteryHealthCard device={device} health={stats?.health} />
+        <BatteryHealthCard device={device} health={stats?.health} onStopDischarge={stopDischarge} stopping={stopping} />
       </div>
 
       <Card>

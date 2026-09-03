@@ -1,9 +1,11 @@
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Loader2, Square } from "lucide-react";
 import SocGauge from "@/components/axle/SocGauge";
 
-export function BatteryHealthCard({ device, health }) {
+export function BatteryHealthCard({ device, health, onStopDischarge, stopping }) {
   const capacity = health?.capacity_kwh || device?.capacity_kwh || 0;
   const throughput = health?.throughput_kwh || 0;
   const cycles = capacity > 0 ? throughput / (2 * capacity) : 0;
@@ -39,6 +41,16 @@ export function BatteryHealthCard({ device, health }) {
             <span className="text-muted-foreground">Reserve floor</span>
             <span className="font-medium">{device?.reserve_soc ?? 20}%</span>
           </div>
+          {onStopDischarge && (
+            <Button
+              className="mt-4 w-full"
+              variant="outline"
+              onClick={onStopDischarge}
+              disabled={stopping}
+            >
+              {stopping ? <Loader2 className="h-4 w-4 animate-spin" /> : <Square className="h-4 w-4" />}Stop discharge
+            </Button>
+          )}
         </div>
       </CardContent>
     </Card>
