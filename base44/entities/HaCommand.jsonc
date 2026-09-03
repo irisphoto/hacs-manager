@@ -1,0 +1,29 @@
+{
+  "name": "HaCommand",
+  "type": "object",
+  "properties": {
+    "command": {
+      "type": "string",
+      "description": "Command type, e.g. charge_car"
+    },
+    "entity_id": {
+      "type": "string"
+    },
+    "service": {
+      "type": "string",
+      "description": "Home Assistant service to call, e.g. switch.turn_on"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "delivered"
+      ],
+      "default": "pending"
+    }
+  },
+  "required": [
+    "command",
+    "entity_id"
+  ]
+}

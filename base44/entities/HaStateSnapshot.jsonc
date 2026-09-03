@@ -1,0 +1,23 @@
+{
+  "name": "HaStateSnapshot",
+  "type": "object",
+  "properties": {
+    "entity_id": {
+      "type": "string",
+      "description": "Home Assistant entity id (one record per entity, latest pushed state)"
+    },
+    "state": {
+      "type": "string"
+    },
+    "unit": {
+      "type": "string"
+    },
+    "friendly_name": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "entity_id",
+    "state"
+  ]
+}

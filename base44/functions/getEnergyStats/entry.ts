@@ -1,5 +1,4 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
-import { secrets } from 'base44:runtime';
 
 const HOUR_MS = 3600 * 1000;
 const round1 = (v) => Math.round(v * 10) / 10;
@@ -75,8 +74,6 @@ export default async function (req) {
     const device = await base44.entities.SolixDevice.get(body.device_id);
     if (!device) return Response.json({ error: 'Device not found' }, { status: 404 });
 
-    const baseUrl = (secrets.get('HA_BASE_URL') || '').replace(/\/+$/, '');
-    const token = secrets.get('HA_TOKEN');
     const entities = {
       soc: device.ha_soc_entity,
       battery: device.ha_power_entity,
@@ -85,39 +82,28 @@ export default async function (req) {
       car: device.ha_car_entity,
     };
     const configured = Object.values(entities).filter(Boolean);
-
-    if (!baseUrl || !token) {
-      return Response.json({ error: 'Home Assistant is not configured' }, { status: 500 });
-    }
     if (configured.length === 0) {
       return Response.json({ error: 'No Home Assistant sensor entities configured. Add them in the Home Assistant sensor settings.' }, { status: 400 });
     }
 
-    const end = new Date();
-    const start = new Date(end.getTime() - 7 * 24 * HOUR_MS);
-    const url = `${baseUrl}/api/history/period/${start.toISOString()}` +
-      `?end_time=${encodeURIComponent(end.toISOString())}` +
-      `&filter_entity_id=${configured.map(encodeURIComponent).join(',')}` +
-      `&minimal_response=1&significant_changes_only=1`;
-
-    const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
-    if (!res.ok) return Response.json({ error: `Home Assistant returned ${res.status}` }, { status: 502 });
-    const history = await res.json();
-
+    // readings recorded by pushHaStates, at most one per entity per hour
+    const start = new Date(Date.now() - 7 * 24 * HOUR_MS).toISOString();
     const series = {};
-    for (const entityHistory of history) {
-      if (!Array.isArray(entityHistory) || entityHistory.length === 0) continue;
-      const entityId = entityHistory[0].entity_id;
-      const points = [];
-      for (const s of entityHistory) {
-        const v = parseFloat(s.state);
-        if (isNaN(v)) continue;
-        const ts = new Date(s.last_updated || s.last_changed).getTime();
-        if (isNaN(ts)) continue;
-        points.push({ t: ts, v });
-      }
-      points.sort((a, b) => a.t - b.t);
-      series[entityId] = points;
+    for (const id of configured) {
+      const readings = await base44.entities.HaReading.filter(
+        { entity_id: id, recorded_at: { $gte: start } },
+        'recorded_at',
+        500
+      );
+      const points = (Array.isArray(readings) ? readings : [])
+        .filter((r) => typeof r.value === 'number' && !isNaN(r.value))
+        .map((r) => {
+          const t = new Date(r.recorded_at).getTime();
+          return isNaN(t) ? null : { t, v: r.value };
+        })
+        .filter(Boolean)
+        .sort((a, b) => a.t - b.t);
+      series[id] = points;
     }
 
     const nowHour = Math.floor(Date.now() / HOUR_MS) * HOUR_MS;
@@ -141,7 +127,9 @@ export default async function (req) {
     }
 
     const hasData = buckets.some((b) => b.soc != null || b.battery_kw || b.grid_kw || b.home_kw || b.car_kw);
-    if (!hasData) return Response.json({ error: 'No history data found for the configured entities' }, { status: 404 });
+    if (!hasData) {
+      return Response.json({ error: 'No history yet — hourly readings build up automatically once Home Assistant starts pushing data.' }, { status: 404 });
+    }
 
     return Response.json({ source: 'home_assistant', ...aggregate(buckets, device) });
   } catch (error) {

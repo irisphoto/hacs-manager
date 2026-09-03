@@ -55,7 +55,7 @@ export default function Energy() {
     setChargingNow(true);
     try {
       const res = await base44.functions.invoke("chargeCarNow", { device_id: device.id });
-      toast({ title: "Car charging started", description: `Triggered ${res.data.entity}.` });
+      toast({ title: "Charging requested", description: `Queued ${res.data.entity} — Home Assistant will trigger it within a minute.` });
     } catch (error) {
       const detail = error.response?.data?.error || error.message;
       toast({ title: "Could not start charging", description: detail, variant: "destructive" });
@@ -140,7 +140,7 @@ export default function Energy() {
       {statsError && (
         <Card className="border-destructive/40 bg-destructive/5">
           <CardContent className="py-4 flex flex-wrap items-center justify-between gap-3 text-sm text-muted-foreground">
-            <span>Live data unavailable: {statsError}. Connect your Anker Solix X1 to pull its sensors from Home Assistant.</span>
+            <span>Live data unavailable: {statsError}. Connect your Anker Solix X1 to map its sensors.</span>
             <Button size="sm" variant="outline" onClick={connectX1} disabled={connecting}>
               {connecting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Zap className="h-4 w-4" />}Connect Anker Solix X1
             </Button>
@@ -207,7 +207,7 @@ export default function Energy() {
           {sensors === null ? (
             <Skeleton className="h-24 w-full" />
           ) : sensors.length === 0 ? (
-            <p className="py-6 text-center text-sm text-muted-foreground">No Solix sensors found. Check that Home Assistant is reachable and your Solix integration is installed.</p>
+            <p className="py-6 text-center text-sm text-muted-foreground">No Solix sensors received yet. Make sure the Home Assistant push automation is running and your Solix integration is installed.</p>
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
               {sensors.map((s) => (

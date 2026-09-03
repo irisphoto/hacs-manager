@@ -1,13 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
-import { secrets } from 'base44:runtime';
-
-const SERVICES = {
-  switch: 'switch/turn_on',
-  button: 'button/press',
-  script: 'script/turn_on',
-  input_boolean: 'input_boolean/turn_on',
-  automation: 'automation/trigger',
-};
+import { SERVICES } from '../../shared/ha.ts';
 
 export default async function (req) {
   try {
@@ -34,30 +26,14 @@ export default async function (req) {
       }, { status: 400 });
     }
 
-    const baseUrl = (secrets.get('HA_BASE_URL') || '').replace(/\/+$/, '');
-    const token = secrets.get('HA_TOKEN');
-    if (!baseUrl || !token) return Response.json({ error: 'Home Assistant is not configured' }, { status: 500 });
-
-    const res = await fetch(`${baseUrl}/api/services/${service}`, {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ entity_id: entity }),
+    await base44.entities.HaCommand.create({
+      command: 'charge_car',
+      entity_id: entity,
+      service,
+      status: 'pending',
     });
-    if (!res.ok) {
-      const detail = await res.text().catch(() => '');
-      return Response.json({ error: `Home Assistant returned ${res.status}. ${detail}`.trim() }, { status: 502 });
-    }
 
-    // best-effort read of the fresh state
-    let state = null;
-    try {
-      const stateRes = await fetch(`${baseUrl}/api/states/${encodeURIComponent(entity)}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (stateRes.ok) state = (await stateRes.json()).state;
-    } catch (_) { /* state read is optional */ }
-
-    return Response.json({ started: true, entity, state });
+    return Response.json({ started: true, queued: true, entity });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
   }
