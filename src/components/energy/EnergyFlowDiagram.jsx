@@ -26,6 +26,14 @@ const LINE_COLOR = {
   battery_car: "#34d399",
 };
 
+const LINE_GRADIENT = {
+  grid_battery: "url(#flow-grid)",
+  grid_home: "url(#flow-grid)",
+  grid_car: "url(#flow-grid)",
+  battery_home: "url(#flow-batt)",
+  battery_car: "url(#flow-batt)",
+};
+
 export function EnergyFlowDiagram({ flows, soc = 0, status = "idle" }) {
   const b = flows?.battery_kw || 0;
   const g = flows?.grid_kw || 0;
@@ -61,27 +69,40 @@ export function EnergyFlowDiagram({ flows, soc = 0, status = "idle" }) {
   const statusColor = STATUS_COLOR[status] || STATUS_COLOR.idle;
   const battFlow = b > 0.05 ? "discharging" : b < -0.05 ? "charging" : "idle";
 
-  const Node = ({ x, y, Icon, label, value, sub, color }) => (
+  const Node = ({ x, y, Icon, label, value, sub, color, glow }) => (
     <g transform={`translate(${x},${y})`}>
-      <circle r="34" className="fill-card" stroke="hsl(var(--border))" strokeWidth="1.5" />
+      {glow && <circle r="48" fill={color} opacity="0.07" />}
+      <rect x="-36" y="-36" width="72" height="72" rx="18" className="fill-card" stroke="hsl(var(--border))" strokeWidth="1.5" />
+      <circle r="21" fill={color} opacity="0.12" />
       <g transform="translate(-11,-11)">
         <Icon width="22" height="22" style={{ color }} />
       </g>
-      <text y="50" textAnchor="middle" className="fill-foreground text-[11px] font-medium">{label}</text>
-      <text y="63" textAnchor="middle" className="fill-muted-foreground text-[10px]">{value}</text>
-      {sub && <text y="74" textAnchor="middle" className="fill-muted-foreground text-[9px]">{sub}</text>}
+      <text y="52" textAnchor="middle" className="fill-muted-foreground text-[11px] font-medium">{label}</text>
+      <text y="66" textAnchor="middle" className="fill-foreground text-[12px] font-semibold">{value}</text>
+      {sub && <text y="78" textAnchor="middle" className="fill-muted-foreground text-[9px]">{sub}</text>}
     </g>
   );
 
   return (
     <div>
       <svg viewBox="0 0 640 330" className="w-full h-auto">
-        {/* faint topology lines */}
+        <defs>
+          <linearGradient id="flow-grid" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%" stopColor="#fbbf24" />
+            <stop offset="100%" stopColor="#f59e0b" />
+          </linearGradient>
+          <linearGradient id="flow-batt" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%" stopColor="#34d399" />
+            <stop offset="100%" stopColor="#14b8a6" />
+          </linearGradient>
+        </defs>
+
+        {/* faint dotted topology lines */}
         {Object.values(GEOM).map((geom) => (
-          <path key={geom.d} d={geom.d} fill="none" className="stroke-border" strokeWidth="2" />
+          <path key={geom.d} d={geom.d} fill="none" className="stroke-border" strokeWidth="1.5" strokeDasharray="1 6" strokeLinecap="round" />
         ))}
 
-        {/* active flows */}
+        {/* active flows: soft glow + gradient dashes */}
         {lines.map((l) => {
           const geom = GEOM[l.key];
           return (
@@ -90,9 +111,16 @@ export function EnergyFlowDiagram({ flows, soc = 0, status = "idle" }) {
                 d={geom.d}
                 fill="none"
                 stroke={LINE_COLOR[l.key]}
-                strokeWidth="2.5"
+                strokeWidth="8"
                 strokeLinecap="round"
-                opacity="0.9"
+                opacity="0.12"
+              />
+              <path
+                d={geom.d}
+                fill="none"
+                stroke={LINE_GRADIENT[l.key]}
+                strokeWidth="3"
+                strokeLinecap="round"
                 className={l.reverse ? "flow-dash-rev" : "flow-dash"}
               />
               <text
@@ -101,7 +129,7 @@ export function EnergyFlowDiagram({ flows, soc = 0, status = "idle" }) {
                 textAnchor="middle"
                 className="fill-foreground text-[11px] font-semibold"
                 stroke="hsl(var(--card))"
-                strokeWidth="4"
+                strokeWidth="6"
                 paintOrder="stroke"
               >
                 {l.value} kW
@@ -110,21 +138,28 @@ export function EnergyFlowDiagram({ flows, soc = 0, status = "idle" }) {
           );
         })}
 
-        <Node x={90} y={170} Icon={UtilityPole} label="Grid" color="#f59e0b"
+        <Node x={90} y={170} Icon={UtilityPole} label="Grid" color="#f59e0b" glow={Math.abs(g) > 0.05}
           value={`${Math.abs(g).toFixed(1)} kW`} sub={g < -0.05 ? "exporting" : g > 0.05 ? "importing" : ""} />
-        <Node x={320} y={170} Icon={BatteryCharging} label="Battery" color={statusColor}
+        <Node x={320} y={170} Icon={BatteryCharging} label="Battery" color={statusColor} glow={battFlow !== "idle"}
           value={`${Math.round(soc)}%`} sub={battFlow} />
-        <Node x={550} y={100} Icon={Home} label="Home" color="#0ea5e9"
+        <Node x={550} y={100} Icon={Home} label="Home" color="#0ea5e9" glow={home > 0.05}
           value={`${home.toFixed(1)} kW`} sub="consumption" />
-        <Node x={550} y={240} Icon={Car} label="Car" color="#8b5cf6"
+        <Node x={550} y={240} Icon={Car} label="Car" color="#8b5cf6" glow={car > 0.05}
           value={`${car.toFixed(1)} kW`} sub={car > 0.05 ? "charging" : "idle"} />
       </svg>
 
-      <div className="mt-2 flex flex-wrap gap-x-5 gap-y-1.5 text-xs text-muted-foreground">
-        <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-amber-500" />Grid {Math.abs(g).toFixed(1)} kW {g < -0.05 ? "export" : "import"}</span>
-        <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-emerald-500" />Battery {Math.abs(b).toFixed(1)} kW {battFlow}</span>
-        <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-sky-500" />Home {home.toFixed(1)} kW</span>
-        <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-violet-500" />Car {car.toFixed(1)} kW</span>
+      <div className="mt-3 flex flex-wrap gap-2">
+        {[
+          { color: "bg-amber-500", label: `Grid ${Math.abs(g).toFixed(1)} kW ${g < -0.05 ? "export" : "import"}` },
+          { color: "bg-emerald-500", label: `Battery ${Math.abs(b).toFixed(1)} kW ${battFlow}` },
+          { color: "bg-sky-500", label: `Home ${home.toFixed(1)} kW` },
+          { color: "bg-violet-500", label: `Car ${car.toFixed(1)} kW` },
+        ].map((item) => (
+          <span key={item.label} className="inline-flex items-center gap-1.5 rounded-full bg-muted px-2.5 py-1 text-[11px] font-medium text-muted-foreground">
+            <span className={`h-2 w-2 rounded-full ${item.color}`} />
+            {item.label}
+          </span>
+        ))}
       </div>
     </div>
   );

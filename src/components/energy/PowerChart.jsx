@@ -2,6 +2,21 @@ import React from "react";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
 import moment from "moment";
 
+const SERIES = [
+  { key: "Grid", color: "#f59e0b" },
+  { key: "Home", color: "#0ea5e9" },
+  { key: "Car", color: "#8b5cf6" },
+  { key: "Battery", color: "#34d399" },
+];
+
+const TOOLTIP_STYLE = {
+  fontSize: 12,
+  borderRadius: 10,
+  border: "1px solid hsl(var(--border))",
+  boxShadow: "0 4px 16px rgb(0 0 0 / 0.08)",
+  padding: "8px 12px",
+};
+
 export function PowerChart({ hourly = [] }) {
   const data = hourly.map((s) => ({
     time: moment(s.time).format("HH:mm"),
@@ -13,24 +28,23 @@ export function PowerChart({ hourly = [] }) {
   return (
     <div className="h-64 w-full">
       <ResponsiveContainer>
-        <AreaChart data={data} margin={{ top: 10, right: 10, left: -12, bottom: 0 }}>
+        <AreaChart data={data} margin={{ top: 10, right: 12, left: -12, bottom: 0 }}>
           <defs>
-            {[["gGrid", "#f59e0b"], ["gHome", "#0ea5e9"], ["gCar", "#8b5cf6"], ["gBatt", "#34d399"]].map(([id, color]) => (
-              <linearGradient key={id} id={id} x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor={color} stopOpacity={0.35} />
-                <stop offset="100%" stopColor={color} stopOpacity={0.05} />
+            {SERIES.map(({ key, color }) => (
+              <linearGradient key={key} id={`pw-${key}`} x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor={color} stopOpacity={0.4} />
+                <stop offset="100%" stopColor={color} stopOpacity={0.02} />
               </linearGradient>
             ))}
           </defs>
-          <CartesianGrid strokeDasharray="3 3" vertical={false} />
-          <XAxis dataKey="time" tick={{ fontSize: 11 }} interval={5} tickLine={false} axisLine={false} />
-          <YAxis tick={{ fontSize: 11 }} tickLine={false} axisLine={false} width={48} unit="kW" />
-          <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8 }} />
-          <Legend wrapperStyle={{ fontSize: 11 }} />
-          <Area type="monotone" dataKey="Grid" stroke="#f59e0b" fill="url(#gGrid)" strokeWidth={2} />
-          <Area type="monotone" dataKey="Home" stroke="#0ea5e9" fill="url(#gHome)" strokeWidth={2} />
-          <Area type="monotone" dataKey="Car" stroke="#8b5cf6" fill="url(#gCar)" strokeWidth={2} />
-          <Area type="monotone" dataKey="Battery" stroke="#34d399" fill="url(#gBatt)" strokeWidth={2} />
+          <CartesianGrid strokeDasharray="4 8" stroke="hsl(var(--border))" vertical={false} />
+          <XAxis dataKey="time" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} interval={5} tickLine={false} axisLine={false} dy={4} />
+          <YAxis tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} tickLine={false} axisLine={false} width={48} unit="kW" />
+          <Tooltip contentStyle={TOOLTIP_STYLE} cursor={{ stroke: "hsl(var(--border))", strokeDasharray: "4 4" }} />
+          <Legend iconType="circle" iconSize={8} formatter={(value) => <span className="text-xs text-muted-foreground">{value}</span>} />
+          {SERIES.map(({ key, color }) => (
+            <Area key={key} type="monotone" dataKey={key} stroke={color} fill={`url(#pw-${key})`} strokeWidth={2.5} activeDot={{ r: 4, strokeWidth: 0 }} />
+          ))}
         </AreaChart>
       </ResponsiveContainer>
     </div>
