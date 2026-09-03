@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { base44 } from "@/api/base44Client";
-import { RefreshCw, Activity, ArrowRight, Wifi, WifiOff, Zap, Loader2 } from "lucide-react";
+import { RefreshCw, Activity, ArrowRight, Wifi, WifiOff, Zap, Loader2, ArrowDownToLine } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -22,6 +22,7 @@ export default function Energy() {
   const [sensors, setSensors] = useState(null);
   const [statsError, setStatsError] = useState(null);
   const [chargingNow, setChargingNow] = useState(false);
+  const [exporting, setExporting] = useState(false);
   const [connecting, setConnecting] = useState(false);
 
   const load = useCallback(async (initial = false) => {
@@ -56,12 +57,30 @@ export default function Energy() {
     setChargingNow(true);
     try {
       const res = await base44.functions.invoke("chargeCarNow", { device_id: device.id });
-      toast({ title: "Charging requested", description: `Queued ${res.data.entity} — Home Assistant will trigger it within a minute.` });
+      toast({
+        title: "Charging requested",
+        description: res.data.via === "webhook"
+          ? "Home Assistant will start the charger and run your battery before the grid."
+          : `Queued ${res.data.entity} — Home Assistant will trigger it within a minute.`,
+      });
     } catch (error) {
       const detail = error.response?.data?.error || error.message;
       toast({ title: "Could not start charging", description: detail, variant: "destructive" });
     } finally {
       setChargingNow(false);
+    }
+  };
+
+  const exportToGrid = async () => {
+    setExporting(true);
+    try {
+      await base44.functions.invoke("exportToGrid", { device_id: device.id });
+      toast({ title: "Export requested", description: "Home Assistant will discharge your battery to the grid." });
+    } catch (error) {
+      const detail = error.response?.data?.error || error.message;
+      toast({ title: "Could not start export", description: detail, variant: "destructive" });
+    } finally {
+      setExporting(false);
     }
   };
 
@@ -156,13 +175,13 @@ export default function Energy() {
               <CardTitle>Energy flow</CardTitle>
               <CardDescription>Live power between grid, battery, home and car.</CardDescription>
             </div>
-            <div className="flex flex-col items-end gap-1 shrink-0">
-              <Button size="sm" onClick={chargeNow} disabled={chargingNow || !device.ha_car_charge_entity}>
+            <div className="flex items-center gap-2 shrink-0">
+              <Button size="sm" variant="outline" onClick={exportToGrid} disabled={exporting}>
+                {exporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowDownToLine className="h-4 w-4" />}Export to grid
+              </Button>
+              <Button size="sm" onClick={chargeNow} disabled={chargingNow}>
                 {chargingNow ? <Loader2 className="h-4 w-4 animate-spin" /> : <Zap className="h-4 w-4" />}Charge Car
               </Button>
-              {!device.ha_car_charge_entity && (
-                <span className="text-[10px] text-muted-foreground text-right">Add the charger entity in HA sensors</span>
-              )}
             </div>
           </CardHeader>
           <CardContent>

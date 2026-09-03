@@ -12,6 +12,27 @@ export const SERVICES = {
   automation: 'automation.trigger',
 };
 
+// Post an action to the Home Assistant "anker-export" webhook automation.
+// Returns { ok: true } on success, or { ok: false, reason } explaining why not.
+export const postHaWebhook = async (payload, webhookId = 'anker-export') => {
+  const base = (process.env.HA_BASE_URL || '').replace(/\/+$/, '');
+  if (!base) return { ok: false, reason: 'HA_BASE_URL not configured' };
+  const headers = { 'Content-Type': 'application/json' };
+  if (process.env.HA_TOKEN) headers['Authorization'] = `Bearer ${process.env.HA_TOKEN}`;
+  try {
+    const res = await fetch(`${base}/api/webhook/${webhookId}`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(payload),
+    });
+    return res.ok
+      ? { ok: true, status: res.status }
+      : { ok: false, reason: `Home Assistant responded ${res.status}` };
+  } catch (e) {
+    return { ok: false, reason: e.message };
+  }
+};
+
 export const cleanStr = (v, max = 255) => (v == null ? '' : String(v)).slice(0, max);
 
 export const chunk = (arr, n) => {
