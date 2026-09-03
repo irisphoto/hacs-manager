@@ -26,6 +26,7 @@ export default async function(req) {
       Authorization: `Bearer ${accessToken}`,
       Accept: "application/vnd.github+json",
       "X-GitHub-Api-Version": "2022-11-28",
+      "User-Agent": "home-mod-hub",
     };
 
     const repoRes = await fetch(`https://api.github.com/repos/${repo_full_name}`, { headers });
