@@ -90,3 +90,19 @@
     @apply bg-background text-foreground font-body;
   }
 }
+
+@keyframes flowdash {
+  to {
+    stroke-dashoffset: -28;
+  }
+}
+
+.flow-dash {
+  stroke-dasharray: 8 6;
+  animation: flowdash 1s linear infinite;
+}
+
+.flow-dash-rev {
+  stroke-dasharray: 8 6;
+  animation: flowdash 1s linear infinite reverse;
+}

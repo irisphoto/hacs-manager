@@ -87,6 +87,18 @@
     "ha_status_entity": {
       "type": "string",
       "description": "Home Assistant entity id for device status"
+    },
+    "ha_grid_entity": {
+      "type": "string",
+      "description": "Home Assistant entity id for grid power (positive = import)"
+    },
+    "ha_home_entity": {
+      "type": "string",
+      "description": "Home Assistant entity id for home consumption power"
+    },
+    "ha_car_entity": {
+      "type": "string",
+      "description": "Home Assistant entity id for car charging power"
     }
   },
   "required": [

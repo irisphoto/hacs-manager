@@ -14,6 +14,7 @@ import ItemDetail from '@/pages/ItemDetail';
 import Installed from '@/pages/Installed';
 import AxleSolix from '@/pages/AxleSolix';
 import MyRepos from '@/pages/MyRepos';
+import Energy from '@/pages/Energy';
 // Add page imports here
 
 const AuthenticatedApp = () => {
@@ -50,6 +51,7 @@ const AuthenticatedApp = () => {
           <Route path="/installed" element={<Installed />} />
           <Route path="/axle-solix" element={<AxleSolix />} />
           <Route path="/my-repos" element={<MyRepos />} />
+          <Route path="/energy" element={<Energy />} />
           <Route path="/item/:id" element={<ItemDetail />} />
         </Route>
       </Route>
