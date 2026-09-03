@@ -22,7 +22,7 @@ export const chunk = (arr, n) => {
 
 export const solixText = (e) => `${e.entity_id} ${e.friendly_name || ''}`.toLowerCase();
 
-export const isSolix = (e) => solixText(e).includes('solix');
+export const isSolix = (e) => /solix|anker|x1_h_/.test(solixText(e));
 
 export const isSupportedDomain = (e) => DOMAINS.includes((e.entity_id || '').split('.')[0]);
 
