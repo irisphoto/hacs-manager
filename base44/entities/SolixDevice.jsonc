@@ -99,6 +99,10 @@
     "ha_car_entity": {
       "type": "string",
       "description": "Home Assistant entity id for car charging power"
+    },
+    "ha_car_charge_entity": {
+      "type": "string",
+      "description": "Home Assistant switch/button/script entity that starts car charging"
     }
   },
   "required": [

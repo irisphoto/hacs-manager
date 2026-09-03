@@ -12,6 +12,7 @@ export function HaSettingsDialog({ open, onOpenChange, device, onSave }) {
   const [gridEntity, setGridEntity] = useState("");
   const [homeEntity, setHomeEntity] = useState("");
   const [carEntity, setCarEntity] = useState("");
+  const [carChargeEntity, setCarChargeEntity] = useState("");
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -22,13 +23,14 @@ export function HaSettingsDialog({ open, onOpenChange, device, onSave }) {
       setGridEntity(device.ha_grid_entity || "");
       setHomeEntity(device.ha_home_entity || "");
       setCarEntity(device.ha_car_entity || "");
+      setCarChargeEntity(device.ha_car_charge_entity || "");
     }
   }, [device]);
 
   const save = async () => {
     setSaving(true);
     try {
-      await onSave({ ha_soc_entity: socEntity.trim(), ha_power_entity: powerEntity.trim(), ha_status_entity: statusEntity.trim(), ha_grid_entity: gridEntity.trim(), ha_home_entity: homeEntity.trim(), ha_car_entity: carEntity.trim() });
+      await onSave({ ha_soc_entity: socEntity.trim(), ha_power_entity: powerEntity.trim(), ha_status_entity: statusEntity.trim(), ha_grid_entity: gridEntity.trim(), ha_home_entity: homeEntity.trim(), ha_car_entity: carEntity.trim(), ha_car_charge_entity: carChargeEntity.trim() });
     } finally { setSaving(false); }
   };
 
@@ -63,7 +65,11 @@ export function HaSettingsDialog({ open, onOpenChange, device, onSave }) {
             <Label>Car charger entity <span className="font-normal text-muted-foreground">(optional)</span></Label>
             <Input placeholder="sensor.car_charger_power" value={carEntity} onChange={(e) => setCarEntity(e.target.value)} />
           </div>
-          <p className="text-xs text-muted-foreground">Paste the exact Home Assistant entity IDs (Settings → Devices &amp; Services → your Solix device). Positive power is treated as discharging; grid power is positive when importing. Leave the optional energy flow sensors blank to see estimated values.</p>
+          <div className="space-y-1">
+            <Label>Car charger control entity <span className="font-normal text-muted-foreground">(optional)</span></Label>
+            <Input placeholder="switch.car_charger" value={carChargeEntity} onChange={(e) => setCarChargeEntity(e.target.value)} />
+          </div>
+          <p className="text-xs text-muted-foreground">Paste the exact Home Assistant entity IDs (Settings → Devices &amp; Services → your Solix device). Positive power is treated as discharging; grid power is positive when importing. Leave the optional energy flow sensors blank to see estimated values. The car charger control entity can be a switch, button or script — it powers the "Charge Now" button.</p>
         </div>
         <DialogFooter>
           <DialogClose asChild><Button variant="outline">Cancel</Button></DialogClose>
