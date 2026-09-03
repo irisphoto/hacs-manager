@@ -121,7 +121,7 @@ export default function Energy() {
             </div>
             <div className="flex flex-col items-end gap-1 shrink-0">
               <Button size="sm" onClick={chargeNow} disabled={chargingNow || !device.ha_car_charge_entity}>
-                {charging car Now ? <Loader2 className="h-4 w-4 animate-spin" /> : <Zap className="h-4 w-4" />}Charge Now
+                {chargingNow ? <Loader2 className="h-4 w-4 animate-spin" /> : <Zap className="h-4 w-4" />}Charge Now
               </Button>
               {!device.ha_car_charge_entity && (
                 <span className="text-[10px] text-muted-foreground text-right">Add the charger entity in HA sensors</span>
