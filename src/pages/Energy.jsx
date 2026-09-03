@@ -12,6 +12,7 @@ import EnergyFlowDiagram from "@/components/energy/EnergyFlowDiagram";
 import PowerChart from "@/components/energy/PowerChart";
 import DailyChart from "@/components/energy/DailyChart";
 import BatteryHealthCard from "@/components/energy/BatteryHealthCard";
+import SensorCards from "@/components/energy/SensorCards";
 
 export default function Energy() {
   const [device, setDevice] = useState(null);
@@ -209,16 +210,7 @@ export default function Energy() {
           ) : sensors.length === 0 ? (
             <p className="py-6 text-center text-sm text-muted-foreground">No Solix sensors received yet. Make sure the Home Assistant push automation is running and your Solix integration is installed.</p>
           ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
-              {sensors.map((s) => (
-                <div key={s.entity_id} className="rounded-lg border border-border p-2.5">
-                  <div className="truncate text-[11px] text-muted-foreground" title={s.entity_id}>{s.name}</div>
-                  <div className="text-sm font-semibold">
-                    {s.state} <span className="text-xs font-normal text-muted-foreground">{s.unit}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
+            <SensorCards sensors={sensors} />
           )}
         </CardContent>
       </Card>
