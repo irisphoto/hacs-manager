@@ -5,9 +5,20 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { SocGauge } from "@/components/axle/SocGauge";
 import { EventCard } from "@/components/axle/EventCard";
-import { Link2, Zap, Battery, PoundSterling, Check, Loader2, Plug, RefreshCw, Settings } from "lucide-react";
+import { Link2, Zap, Waves, Battery, PoundSterling, Check, Loader2, Plug, RefreshCw, Settings } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { HaSettingsDialog } from "@/components/axle/HaSettingsDialog";
+import { AccountLoginDialog } from "@/components/axle/AccountLoginDialog";
+
+const ANKER_FIELDS = [
+  { key: "anker_account", label: "Email", type: "email", placeholder: "you@example.com" },
+  { key: "anker_password", label: "Password", type: "password", placeholder: "Your Anker account password" },
+];
+
+const OCTOPUS_FIELDS = [
+  { key: "octopus_account", label: "Email", type: "email", placeholder: "you@example.com" },
+  { key: "octopus_api_key", label: "API key", type: "password", placeholder: "Your Octopus Energy API key" },
+];
 
 export default function AxleSolix() {
   const [device, setDevice] = useState(null);
@@ -16,6 +27,8 @@ export default function AxleSolix() {
   const [busy, setBusy] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [haOpen, setHaOpen] = useState(false);
+  const [ankerOpen, setAnkerOpen] = useState(false);
+  const [octopusOpen, setOctopusOpen] = useState(false);
   const { toast } = useToast();
 
   const load = async () => {
@@ -43,9 +56,15 @@ export default function AxleSolix() {
     } finally { setBusy(false); }
   };
 
-  const connectAnker = () => {
-    updateDevice({ anker_connected: true, anker_account: "you@ankersolix.com" });
+  const saveAnkerLogin = async (patch) => {
+    await updateDevice({ ...patch, anker_connected: true });
+    setAnkerOpen(false);
     toast({ title: "Anker Solix connected", description: "Your battery account is linked." });
+  };
+  const saveOctopusLogin = async (patch) => {
+    await updateDevice({ ...patch, octopus_connected: true });
+    setOctopusOpen(false);
+    toast({ title: "Octopus Energy connected", description: "Your energy account is linked." });
   };
   const connectAxle = () => {
     updateDevice({ axle_connected: true, axle_account: "you@axle.energy" });
@@ -123,8 +142,8 @@ export default function AxleSolix() {
       {/* Connection flow / status */}
       <Card className="bg-card/40 border-border/50 backdrop-blur-sm">
         <CardContent className="p-5">
-          <div className="flex flex-col sm:flex-row gap-4 sm:items-center">
-            <div className="flex-1 flex items-center gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="flex items-center gap-3">
               <div className={`p-2.5 rounded-lg ${device?.anker_connected ? "bg-emerald-500/10" : "bg-muted"}`}>
                 <Battery className={`h-4 w-4 ${device?.anker_connected ? "text-emerald-400" : "text-muted-foreground"}`} />
               </div>
@@ -133,10 +152,7 @@ export default function AxleSolix() {
                 <div className="text-xs text-muted-foreground truncate">{device?.anker_connected ? device.anker_account : "Not connected"}</div>
               </div>
             </div>
-            <div className="flex items-center justify-center">
-              <div className={`h-px w-8 ${linked ? "bg-emerald-500/50" : "bg-border"}`} />
-            </div>
-            <div className="flex-1 flex items-center gap-3">
+            <div className="flex items-center gap-3">
               <div className={`p-2.5 rounded-lg ${device?.axle_connected ? "bg-sky-500/10" : "bg-muted"}`}>
                 <Zap className={`h-4 w-4 ${device?.axle_connected ? "text-sky-400" : "text-muted-foreground"}`} />
               </div>
@@ -145,14 +161,26 @@ export default function AxleSolix() {
                 <div className="text-xs text-muted-foreground truncate">{device?.axle_connected ? device.axle_account : "Not connected"}</div>
               </div>
             </div>
+            <div className="flex items-center gap-3">
+              <div className={`p-2.5 rounded-lg ${device?.octopus_connected ? "bg-emerald-500/10" : "bg-muted"}`}>
+                <Waves className={`h-4 w-4 ${device?.octopus_connected ? "text-emerald-400" : "text-muted-foreground"}`} />
+              </div>
+              <div className="min-w-0">
+                <div className="text-sm font-medium text-foreground">Octopus Energy</div>
+                <div className="text-xs text-muted-foreground truncate">{device?.octopus_connected ? device.octopus_account : "Not connected"}</div>
+              </div>
+            </div>
           </div>
 
           <div className="flex flex-wrap gap-2 mt-5">
-            {!device?.anker_connected && (
-              <Button size="sm" onClick={connectAnker} disabled={busy}>
-                {busy ? <Loader2 className="h-4 w-4 animate-spin mr-1.5" /> : <Plug className="h-4 w-4 mr-1.5" />}Connect Anker Solix
-              </Button>
-            )}
+            <Button size="sm" variant={device?.anker_connected ? "outline" : "default"} onClick={() => setAnkerOpen(true)} disabled={busy}>
+              {busy ? <Loader2 className="h-4 w-4 animate-spin mr-1.5" /> : <Plug className="h-4 w-4 mr-1.5" />}
+              {device?.anker_connected ? "Update Anker details" : "Connect Anker Solix"}
+            </Button>
+            <Button size="sm" variant={device?.octopus_connected ? "outline" : "default"} onClick={() => setOctopusOpen(true)} disabled={busy}>
+              {busy ? <Loader2 className="h-4 w-4 animate-spin mr-1.5" /> : <Plug className="h-4 w-4 mr-1.5" />}
+              {device?.octopus_connected ? "Update Octopus details" : "Connect Octopus Energy"}
+            </Button>
             {device?.anker_connected && !device?.axle_connected && (
               <Button size="sm" onClick={connectAxle} disabled={busy}>
                 {busy ? <Loader2 className="h-4 w-4 animate-spin mr-1.5" /> : <Plug className="h-4 w-4 mr-1.5" />}Connect Axle Energy
@@ -252,6 +280,29 @@ export default function AxleSolix() {
           </div>
 
           <HaSettingsDialog open={haOpen} onOpenChange={setHaOpen} device={device} onSave={saveHaSettings} />
+        </>
+      )}
+
+      {device && (
+        <>
+          <AccountLoginDialog
+            open={ankerOpen}
+            onOpenChange={setAnkerOpen}
+            title="Anker Solix account"
+            description="Sign in with the account your Solix battery is registered to."
+            fields={ANKER_FIELDS}
+            values={device}
+            onSave={saveAnkerLogin}
+          />
+          <AccountLoginDialog
+            open={octopusOpen}
+            onOpenChange={setOctopusOpen}
+            title="Octopus Energy account"
+            description="Use the email and API key from your Octopus Energy account (Settings → API access)."
+            fields={OCTOPUS_FIELDS}
+            values={device}
+            onSave={saveOctopusLogin}
+          />
         </>
       )}
     </div>

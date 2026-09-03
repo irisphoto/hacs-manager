@@ -37,7 +37,12 @@
       "default": false
     },
     "anker_account": {
-      "type": "string"
+      "type": "string",
+      "description": "Anker Solix account email"
+    },
+    "anker_password": {
+      "type": "string",
+      "description": "Anker Solix account password"
     },
     "axle_connected": {
       "type": "boolean",
@@ -49,6 +54,18 @@
     "axle_enrolled": {
       "type": "boolean",
       "default": false
+    },
+    "octopus_connected": {
+      "type": "boolean",
+      "default": false
+    },
+    "octopus_account": {
+      "type": "string",
+      "description": "Octopus Energy account email"
+    },
+    "octopus_api_key": {
+      "type": "string",
+      "description": "Octopus Energy API key"
     },
     "total_earnings_gbp": {
       "type": "number",
