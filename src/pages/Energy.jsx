@@ -21,6 +21,7 @@ export default function Energy() {
   const [sensors, setSensors] = useState(null);
   const [statsError, setStatsError] = useState(null);
   const [chargingNow, setChargingNow] = useState(false);
+  const [connecting, setConnecting] = useState(false);
 
   const load = useCallback(async (initial = false) => {
     if (initial) setLoading(true); else setRefreshing(true);
@@ -60,6 +61,24 @@ export default function Energy() {
       toast({ title: "Could not start charging", description: detail, variant: "destructive" });
     } finally {
       setChargingNow(false);
+    }
+  };
+
+  const connectX1 = async () => {
+    setConnecting(true);
+    try {
+      const res = await base44.functions.invoke("connectSolixX1", { device_id: device.id });
+      const d = res.data;
+      if (d.connected) {
+        toast({ title: "Anker Solix X1 connected", description: `Mapped ${d.mappedCount} sensor${d.mappedCount === 1 ? "" : "s"} from Home Assistant.` });
+        await load(false);
+      } else {
+        toast({ title: "Could not connect", description: d.reason, variant: "destructive" });
+      }
+    } catch (error) {
+      toast({ title: "Could not connect", description: error.response?.data?.error || error.message, variant: "destructive" });
+    } finally {
+      setConnecting(false);
     }
   };
 
@@ -120,8 +139,11 @@ export default function Energy() {
 
       {statsError && (
         <Card className="border-destructive/40 bg-destructive/5">
-          <CardContent className="py-4 text-sm text-muted-foreground">
-            Live data unavailable: {statsError}. Check that Home Assistant is online and your sensor entities are set, then hit Refresh.
+          <CardContent className="py-4 flex flex-wrap items-center justify-between gap-3 text-sm text-muted-foreground">
+            <span>Live data unavailable: {statsError}. Connect your Anker Solix X1 to pull its sensors from Home Assistant.</span>
+            <Button size="sm" variant="outline" onClick={connectX1} disabled={connecting}>
+              {connecting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Zap className="h-4 w-4" />}Connect Anker Solix X1
+            </Button>
           </CardContent>
         </Card>
       )}
