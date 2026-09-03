@@ -4,12 +4,17 @@ import { secrets } from 'base44:runtime';
 const CF_API = 'https://api.cloudflare.com/client/v4';
 
 async function call(path) {
-  const res = await fetch(`${CF_API}${path}`, {
-    headers: {
-      Authorization: `Bearer ${(secrets.get('CLOUDFLARE_API_TOKEN') || '').trim()}`,
-      'Content-Type': 'application/json',
-    },
-  });
+  const email = (secrets.get('CLOUDFLARE_EMAIL') || '').trim();
+  const key = (secrets.get('CLOUDFLARE_API_TOKEN') || '').trim();
+  const headers = { 'Content-Type': 'application/json' };
+  if (email) {
+    // Global API Key auth
+    headers['X-Auth-Email'] = email;
+    headers['X-Auth-Key'] = key;
+  } else {
+    headers['Authorization'] = `Bearer ${key}`;
+  }
+  const res = await fetch(`${CF_API}${path}`, { headers });
   const data = await res.json().catch(() => ({}));
   return { status: res.status, ok: res.ok && data.success !== false, data };
 }
@@ -23,6 +28,8 @@ export default async function (req) {
     const rawToken = secrets.get('CLOUDFLARE_API_TOKEN');
     if (!rawToken) return Response.json({ error: 'CLOUDFLARE_API_TOKEN is not set' }, { status: 500 });
     const token = rawToken.trim();
+    const email = secrets.get('CLOUDFLARE_EMAIL');
+    if (!email) return Response.json({ error: 'CLOUDFLARE_EMAIL is not set' }, { status: 500 });
     const tokenShape = {
       length: token.length,
       hasWhitespaceInside: /\s/.test(token),
@@ -30,8 +37,8 @@ export default async function (req) {
       isAlnumSafe: /^[A-Za-z0-9_-]+$/.test(token),
     };
 
-    // 1. verify token
-    const verify = await call('/user/tokens/verify');
+    // 1. verify credentials (Bearer tokens use /user/tokens/verify; Global API Key uses /user)
+    const verify = email ? await call('/user') : await call('/user/tokens/verify');
     if (!verify.ok) {
       return Response.json({ connected: false, step: 'verify', status: verify.status, tokenShape, errors: verify.data.errors || [] }, { status: 200 });
     }
